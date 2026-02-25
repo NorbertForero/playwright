@@ -1,0 +1,41 @@
+{
+  "name": "playwright-automation-framework",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test tests/ui/",
+    "test:api": "npx playwright test tests/api/",
+    "test:e2e": "npx playwright test tests/e2e/",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "test:chromium": "npx playwright test --project=chromium",
+    "test:firefox": "npx playwright test --project=firefox",
+    "test:webkit": "npx playwright test --project=webkit",
+    "test:mobile": "npx playwright test --project=mobile-chrome --project=mobile-safari",
+    "test:parallel": "npx playwright test --workers=4",
+    "test:ci": "npx playwright test --reporter=github",
+    "report": "npx playwright show-report reports/html",
+    "codegen": "npx playwright codegen",
+    "trace": "npx playwright show-trace"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.3.0",
+    "@types/mssql": "^9.1.9",
+    "@types/pg": "^8.16.0",
+    "dotenv": "^17.3.1",
+    "mssql": "^12.2.0",
+    "mysql2": "^3.18.1",
+    "pg": "^8.18.0"
+  }
+}
