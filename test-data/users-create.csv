@@ -1,0 +1,10 @@
+testName,email,password,firstName,lastName,phone,expectedStatus,expectedMessage
+Usuario válido completo,user1@test.com,Password123!,Juan,Pérez,+521234567890,201,User created successfully
+Usuario con email corporativo,admin@empresa.com,SecurePass456#,María,García,+521234567891,201,User created successfully
+Usuario sin teléfono,user2@test.com,MyPassword789@,Carlos,López,,201,User created successfully
+Email inválido sin @,invalidemail.com,Password123!,Pedro,Martínez,+521234567892,400,Invalid email format
+Email vacío,,Password123!,Ana,Rodríguez,+521234567893,400,Email is required
+Password muy corto,user3@test.com,123,Luis,Hernández,+521234567894,400,Password must be at least 8 characters
+Password sin mayúsculas,user4@test.com,password123!,Sofia,Díaz,+521234567895,400,Password must contain uppercase
+Nombre vacío,user5@test.com,Password123!,,Sánchez,+521234567896,400,First name is required
+Email duplicado,existing@test.com,Password123!,Roberto,Flores,+521234567897,409,Email already exists

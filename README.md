@@ -1,6 +1,6 @@
 # 🎭 Framework de Automatización con Playwright
 
-Framework profesional de pruebas automatizadas con Playwright para testing de Frontend, Backend (API) y E2E con validaciones en base de datos.
+Framework profesional de pruebas automatizadas con Playwright para testing de Frontend, Backend (API) y E2E con validaciones en base de datos y mensajería Kafka.
 
 ## 📋 Características
 
@@ -8,6 +8,7 @@ Framework profesional de pruebas automatizadas con Playwright para testing de Fr
 - ✅ **Tests de API** - Pruebas de backend/servicios REST
 - ✅ **Tests E2E** - Flujos completos de usuario
 - ✅ **Conexión a DB** - Validaciones con PostgreSQL, SQL Server y MySQL
+- ✅ **Validación Kafka** - Verificación de eventos/mensajes en topics Kafka
 - ✅ **Multi-navegador** - Chrome, Firefox, Safari, Mobile
 - ✅ **Reportes HTML** - Reportes detallados con screenshots y videos
 - ✅ **Fixtures personalizados** - Page Objects y API Client inyectables
@@ -22,10 +23,14 @@ playwright/
 │   │   └── api-client.ts
 │   ├── config/                 # Configuración de ambiente y DB
 │   │   ├── database.config.ts
-│   │   └── environment.config.ts
+│   │   ├── environment.config.ts
+│   │   └── kafka.config.ts
 │   ├── database/               # Cliente y helpers de base de datos
 │   │   ├── db-client.ts
 │   │   └── db-helper.ts
+│   ├── kafka/                  # Cliente y helpers de Kafka
+│   │   ├── kafka-client.ts
+│   │   └── kafka-helper.ts
 │   ├── fixtures/               # Fixtures personalizados de Playwright
 │   │   └── test-fixtures.ts
 │   ├── pages/                  # Page Objects
@@ -40,7 +45,8 @@ playwright/
 ├── tests/
 │   ├── api/                    # Tests de API
 │   │   ├── users.api.spec.ts
-│   │   └── products.api.spec.ts
+│   │   ├── products.api.spec.ts
+│   │   └── kafka-events.api.spec.ts
 │   ├── ui/                     # Tests de UI
 │   │   ├── login.spec.ts
 │   │   └── dashboard.spec.ts
@@ -248,6 +254,127 @@ const user = await db.getUserByEmail('user@example.com');
 const db = new DatabaseHelper('mysql');
 await db.connect();
 const user = await db.getUserByEmail('user@example.com');
+```
+
+## 📨 Validación de Eventos Kafka
+
+El framework permite validar mensajes en Kafka después de ejecutar acciones en la API o UI.
+
+### Configuración de Kafka
+
+```env
+# .env
+KAFKA_BROKERS=localhost:9092
+KAFKA_GROUP_ID=playwright-test-group
+KAFKA_TOPIC_USER_EVENTS=user-events
+KAFKA_TOPIC_ORDER_EVENTS=order-events
+```
+
+### Patrón de Validación
+
+```typescript
+import { test, expect } from '../../src/fixtures';
+
+test('POST /users debe publicar evento en Kafka', async ({ 
+  authenticatedApiClient,
+  kafka
+}) => {
+  // 1. INICIAR captura de mensajes ANTES de la acción
+  await kafka.startUserEventsCapture();
+
+  // 2. Ejecutar la acción que genera el evento
+  const response = await authenticatedApiClient.post('/users', {
+    email: 'new@example.com',
+    name: 'Test User'
+  });
+  expect(response.status).toBe(201);
+  const userId = response.data.id;
+
+  // 3. ESPERAR y validar el evento en Kafka
+  const kafkaEvent = await kafka.waitForUserCreatedEvent(userId);
+
+  // 4. Verificaciones del evento
+  expect(kafkaEvent).not.toBeNull();
+  expect(kafkaEvent!.value).toMatchObject({
+    eventType: 'USER_CREATED',
+    userId: String(userId),
+    email: 'new@example.com',
+  });
+
+  // 5. Detener captura
+  await kafka.stopCapture();
+});
+```
+
+### Métodos de Validación Disponibles
+
+| Método | Descripción |
+|--------|-------------|
+| `startUserEventsCapture()` | Inicia captura en topic de usuarios |
+| `startOrderEventsCapture()` | Inicia captura en topic de órdenes |
+| `startProductEventsCapture()` | Inicia captura en topic de productos |
+| `startAuditCapture()` | Inicia captura en topic de auditoría |
+| `startCapture(topics[])` | Inicia captura en múltiples topics |
+| `waitForUserCreatedEvent(userId)` | Espera evento USER_CREATED |
+| `waitForUserUpdatedEvent(userId)` | Espera evento USER_UPDATED |
+| `waitForLoginEvent(email)` | Espera evento USER_LOGIN |
+| `waitForOrderCreatedEvent(orderId)` | Espera evento ORDER_CREATED |
+| `waitForOrderStatusChangedEvent(orderId, status)` | Espera cambio de estado |
+| `waitForStockUpdatedEvent(productId)` | Espera evento de stock |
+| `verifyNoMessage(filter)` | Verifica que NO llegó un mensaje |
+| `getCapturedMessages()` | Obtiene todos los mensajes capturados |
+| `stopCapture()` | Detiene captura y desconecta |
+
+### Validación Negativa
+
+```typescript
+test('Login fallido NO debe generar evento', async ({ apiClient, kafka }) => {
+  await kafka.startUserEventsCapture();
+
+  // Intento fallido de login
+  await apiClient.post('/auth/login', { email: 'wrong@email.com', password: 'wrong' });
+
+  // Verificar que NO llegó evento de login exitoso
+  const noEvent = await kafka.verifyNoMessage({
+    topic: 'user-events',
+    valueContains: { eventType: 'USER_LOGIN', email: 'wrong@email.com' },
+  });
+  expect(noEvent).toBe(true);
+
+  await kafka.stopCapture();
+});
+```
+
+### Test E2E con UI + API + Kafka + DB
+
+```typescript
+test('Compra completa valida eventos', async ({ page, apiClient, kafka, db }) => {
+  // Capturar múltiples topics
+  await kafka.startCapture(['user-events', 'order-events', 'product-events']);
+
+  // Login via UI
+  await page.goto('/login');
+  await page.fill('[data-testid="email-input"]', 'test@example.com');
+  await page.fill('[data-testid="password-input"]', 'Password123!');
+  await page.click('[data-testid="login-button"]');
+
+  // Verificar evento de login
+  const loginEvent = await kafka.waitForLoginEvent('test@example.com');
+  expect(loginEvent).not.toBeNull();
+
+  // Crear orden via API
+  const orderResponse = await apiClient.post('/orders', { items: [{ productId: 1, qty: 1 }] });
+  
+  // Verificar evento de orden
+  const orderEvent = await kafka.waitForOrderCreatedEvent(orderResponse.data.id);
+  expect(orderEvent).not.toBeNull();
+
+  // Verificar en base de datos
+  const order = await db.getOrderById(orderResponse.data.id);
+  expect(order).not.toBeNull();
+
+  await kafka.stopCapture();
+});
 ```
 
 ## 🎯 Mejores Prácticas Implementadas

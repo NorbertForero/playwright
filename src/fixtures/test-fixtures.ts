@@ -2,6 +2,7 @@ import { test as base, Page, BrowserContext } from '@playwright/test';
 import { LoginPage, DashboardPage } from '../pages';
 import { ApiClient } from '../api';
 import { DatabaseHelper } from '../database';
+import { KafkaHelper } from '../kafka';
 import { testUsers } from '../config';
 
 /**
@@ -18,6 +19,9 @@ type CustomFixtures = {
   
   // Database
   db: DatabaseHelper;
+  
+  // Kafka
+  kafka: KafkaHelper;
   
   // Usuario autenticado
   authenticatedPage: Page;
@@ -77,6 +81,20 @@ export const test = base.extend<CustomFixtures>({
     // Cleanup: desconectar
     try {
       await dbHelper.disconnect();
+    } catch {
+      // Ignorar errores de desconexión
+    }
+  },
+
+  // Fixture: Kafka Helper
+  kafka: async ({}, use) => {
+    const kafkaHelper = new KafkaHelper();
+    
+    await use(kafkaHelper);
+    
+    // Cleanup: desconectar
+    try {
+      await kafkaHelper.stopCapture();
     } catch {
       // Ignorar errores de desconexión
     }

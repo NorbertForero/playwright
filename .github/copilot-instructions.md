@@ -7,6 +7,7 @@ Este es un framework de automatización de pruebas con Playwright que incluye:
 - Tests de API (Backend)
 - Tests E2E (End-to-End)
 - Validaciones con base de datos (PostgreSQL, SQL Server, MySQL)
+- Validaciones de eventos Kafka
 
 ## 🏗️ Arquitectura y Patrones de Diseño
 
@@ -20,8 +21,9 @@ Este es un framework de automatización de pruebas con Playwright que incluye:
 ```
 src/
 ├── api/          # Cliente API para tests de backend
-├── config/       # Configuración de ambiente y BD
+├── config/       # Configuración de ambiente, BD y Kafka
 ├── database/     # Cliente multi-BD
+├── kafka/        # Cliente y helpers de Kafka
 ├── fixtures/     # Fixtures personalizados de Playwright
 ├── pages/        # Page Objects
 ├── types/        # Tipos TypeScript
@@ -143,7 +145,41 @@ Los siguientes fixtures están disponibles en todos los tests:
 | `apiClient` | Cliente API sin autenticación |
 | `authenticatedApiClient` | Cliente API autenticado |
 | `db` | Helper de base de datos |
+| `kafka` | Helper de validación Kafka |
 | `authenticatedPage` | Página ya autenticada |
+
+## 📨 Validación de Eventos Kafka
+
+### Uso del KafkaHelper
+```typescript
+// Patrón: Iniciar captura ANTES de la acción
+test('POST /users genera evento Kafka', async ({ authenticatedApiClient, kafka }) => {
+  // 1. Iniciar captura
+  await kafka.startUserEventsCapture();
+
+  // 2. Ejecutar acción
+  const response = await authenticatedApiClient.post('/users', userData);
+
+  // 3. Esperar evento
+  const event = await kafka.waitForUserCreatedEvent(response.data.id);
+  expect(event).not.toBeNull();
+  expect(event!.value.eventType).toBe('USER_CREATED');
+
+  // 4. Cleanup
+  await kafka.stopCapture();
+});
+```
+
+### Métodos de Kafka disponibles
+- `startUserEventsCapture()` - Captura en topic de usuarios
+- `startOrderEventsCapture()` - Captura en topic de órdenes
+- `startProductEventsCapture()` - Captura en topic de productos
+- `startAuditCapture()` - Captura en topic de auditoría
+- `waitForUserCreatedEvent(userId)` - Espera evento USER_CREATED
+- `waitForOrderCreatedEvent(orderId)` - Espera evento ORDER_CREATED
+- `waitForLoginEvent(email)` - Espera evento USER_LOGIN
+- `verifyNoMessage(filter)` - Verifica que NO llegó mensaje
+- `stopCapture()` - Detener y desconectar
 
 ## 📊 Generación de Datos de Prueba
 

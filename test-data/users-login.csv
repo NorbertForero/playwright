@@ -1,0 +1,9 @@
+testName,email,password,expectedStatus,shouldHaveToken,expectedError
+Login válido,valid@test.com,ValidPassword123!,200,true,
+Login con email incorrecto,wrong@test.com,ValidPassword123!,401,false,Invalid credentials
+Login con password incorrecto,valid@test.com,WrongPassword123!,401,false,Invalid credentials
+Email vacío,,ValidPassword123!,400,false,Email is required
+Password vacío,valid@test.com,,400,false,Password is required
+Ambos campos vacíos,,,400,false,Email is required
+Email formato inválido,notanemail,ValidPassword123!,400,false,Invalid email format
+Usuario bloqueado,blocked@test.com,ValidPassword123!,403,false,Account is blocked

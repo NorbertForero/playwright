@@ -1,0 +1,11 @@
+testName,name,description,price,category,sku,stock,expectedStatus,expectedMessage
+Producto válido completo,Laptop Gaming Pro,Laptop de alta gama para gaming,1299.99,Electronics,LAP-GAM-001,50,201,Product created successfully
+Producto con precio mínimo,Cable USB,Cable USB tipo C,0.99,Accessories,CAB-USB-001,1000,201,Product created successfully
+Producto sin stock,Monitor 4K,Monitor UHD de 27 pulgadas,599.99,Electronics,MON-4K-001,0,201,Product created successfully
+Producto con descripción larga,Teclado Mecánico,"Teclado mecánico RGB con switches Cherry MX, retroiluminación personalizable y reposamuñecas incluido",149.99,Peripherals,TEC-MEC-001,25,201,Product created successfully
+Nombre vacío,,Descripción del producto,99.99,Electronics,PRD-001,10,400,Product name is required
+Precio negativo,Producto Inválido,Producto con precio negativo,-50.00,Electronics,PRD-002,10,400,Price must be positive
+Precio cero,Producto Gratis,Producto sin precio,0,Electronics,PRD-003,10,400,Price must be greater than zero
+SKU duplicado,Producto Duplicado,Producto con SKU existente,99.99,Electronics,EXISTING-SKU,10,409,SKU already exists
+Categoría inválida,Producto Sin Categoría,Producto sin categoría válida,99.99,InvalidCategory,PRD-004,10,400,Invalid category
+Stock negativo,Producto Stock Negativo,Producto con stock negativo,99.99,Electronics,PRD-005,-5,400,Stock cannot be negative
